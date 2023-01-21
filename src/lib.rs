@@ -1,17 +1,18 @@
 use javarandom::JavaRandom;
 
+const PIECE_COUNT: usize = 11;
 
 pub struct Randomizer {
     // randomizer
     r: JavaRandom,
-    pieces: [usize; 11],
+    pieces: Vec<usize>,
 }
 
 impl Randomizer {
-    pub fn new(piece_enable: [bool; 11], seed: i64) -> Randomizer {
+    pub fn new(piece_enable: [bool; PIECE_COUNT], seed: i64) -> Randomizer {
         let mut randomizer = Randomizer {
             r: JavaRandom::with_seed(seed),
-            pieces: [0; 11]
+            pieces: vec![],
         };
         randomizer.set_state(piece_enable, seed);
         return randomizer;
@@ -31,8 +32,10 @@ impl Randomizer {
                 piece += 1;
             }
         }
+        self.pieces.clear();
+        self.pieces.resize(piece, 0);
         piece = 0;
-        for i in 0..11 {
+        for i in 0..PIECE_COUNT {
             if piece_enable[i] {
                 self.pieces[piece] = i;
                 piece += 1;
@@ -48,7 +51,7 @@ impl Randomizer {
 
     pub fn is_piece_szo_only(&mut self) -> bool {
         for i in 0..11 {
-            if self.pieces[i] != 0 || self.pieces[i] != 2 || self.pieces[i] != 3 {
+            if self.pieces[i] != 4 || self.pieces[i] != 6 || self.pieces[i] != 3 {
                 return false;
             }
         }
@@ -59,7 +62,7 @@ impl Randomizer {
 
 pub struct BagRandomizer {
     pub randomizer: Randomizer,
-    bag: [usize; 11],
+    bag: Vec<usize>,
     pt: usize,
 }
 
@@ -68,15 +71,16 @@ impl BagRandomizer {
         let randomizer = Randomizer::new(piece_enable, seed);
         BagRandomizer {
             randomizer,
-            bag: [0; 11],
+            bag: vec![],
             pt: 0,
         }
     }
 
     pub fn init(&mut self) -> &mut BagRandomizer {
-        self.bag = [0; 11];
+        self.bag = vec![];
+        self.bag.resize(self.randomizer.pieces.len(), 0);
         self.pt = 0;
-        for i in 0..11 {
+        for i in 0..self.randomizer.pieces.len() {
             self.bag[i] = self.randomizer.pieces[i];
         }
         self.shuffle();
@@ -97,7 +101,7 @@ impl BagRandomizer {
     pub fn next(&mut self) -> usize {
         let id = self.bag[self.pt];
         self.pt += 1;
-        if self.pt == 11 {
+        if self.pt == self.randomizer.pieces.len() {
             self.pt = 0;
             self.shuffle();
         }
@@ -128,7 +132,7 @@ impl BagNoSZORandomizer {
 
     pub fn shuffle(&mut self) -> &mut BagNoSZORandomizer {
         if self.first_bag && !self.bag_randomizer.randomizer.is_piece_szo_only() {
-            while self.bag_randomizer.bag[0] == 2 || self.bag_randomizer.bag[0] == 3 || self.bag_randomizer.bag[0] == 6 {
+            while self.bag_randomizer.bag[0] == 4 || self.bag_randomizer.bag[0] == 6 || self.bag_randomizer.bag[0] == 3 {
                 self.bag_randomizer.shuffle();
             }
             self.first_bag = false;
